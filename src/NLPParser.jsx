@@ -338,10 +338,14 @@ function formatPrice(p) {
   return `₹${p.toLocaleString()}`;
 }
 
+const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 function dictFind(text, map, threshold = 0.80) {
   const keys = Object.keys(map).sort((a,b)=>b.length-a.length);
   // Exact first
-  for (const k of keys) if (text.includes(k)) return {key:k, value:map[k], dist:0};
+  for (const k of keys) {
+    if (new RegExp("\\b" + escapeRegExp(k) + "\\b", "i").test(text)) return {key:k, value:map[k], dist:0};
+  }
   // Fuzzy
   const f = fuzzyFind(text, keys, threshold);
   if (f) return {key:f.matched, value:map[f.matched], dist:f.dist, original:f.window};
@@ -362,7 +366,7 @@ function parseQuery(raw, geoOverride = null) {
   const ptKeys = Object.keys(PROPERTY_TYPE_MAP).sort((a,b)=>b.length-a.length);
   let ptFound = false;
   for (const k of ptKeys) {
-    if (text.includes(k)) {
+    if (new RegExp("\\b" + escapeRegExp(k) + "\\b", "i").test(text)) {
       entities.propertyType = PROPERTY_TYPE_MAP[k];
       entities.propertyTypeLabel = PROPERTY_TYPE_LABELS[PROPERTY_TYPE_MAP[k]];
       ptFound = true; break;
@@ -408,7 +412,7 @@ function parseQuery(raw, geoOverride = null) {
   // 6. POSSESSION
   const possKeys = Object.keys(POSSESSION_MAP).sort((a,b)=>b.length-a.length);
   for (const k of possKeys) {
-    if (text.includes(k)) {
+    if (new RegExp("\\b" + escapeRegExp(k) + "\\b", "i").test(text)) {
       entities.possession = POSSESSION_MAP[k];
       entities.possessionLabel = POSSESSION_LABELS[POSSESSION_MAP[k]];
       break;
@@ -426,7 +430,7 @@ function parseQuery(raw, geoOverride = null) {
   // 7. FURNISHING
   const furnKeys = Object.keys(FURNISH_MAP).sort((a,b)=>b.length-a.length);
   for (const k of furnKeys) {
-    if (text.includes(k)) {
+    if (new RegExp("\\b" + escapeRegExp(k) + "\\b", "i").test(text)) {
       entities.furnish = FURNISH_MAP[k];
       entities.furnishLabel = FURNISH_LABELS[FURNISH_MAP[k]];
       break;
@@ -437,7 +441,7 @@ function parseQuery(raw, geoOverride = null) {
   const amenities = [];
   const amenKeys = Object.keys(AMENITY_MAP).sort((a,b)=>b.length-a.length);
   for (const k of amenKeys) {
-    if (text.includes(k)) {
+    if (new RegExp("\\b" + escapeRegExp(k) + "\\b", "i").test(text)) {
       const id = AMENITY_MAP[k];
       if (!amenities.find(a=>a.id===id))
         amenities.push({id, label:AMENITY_LABELS[id]||k});
@@ -448,7 +452,7 @@ function parseQuery(raw, geoOverride = null) {
   // 9. FACING
   const facKeys = Object.keys(FACING_MAP).sort((a,b)=>b.length-a.length);
   for (const k of facKeys) {
-    if (text.includes(k)) {
+    if (new RegExp("\\b" + escapeRegExp(k) + "\\b", "i").test(text)) {
       entities.facing = FACING_MAP[k];
       entities.facingLabel = FACING_LABELS[FACING_MAP[k]];
       break;
@@ -458,7 +462,7 @@ function parseQuery(raw, geoOverride = null) {
   // 10. PROPERTY FEATURES
   const pfKeys = Object.keys(PROPERTY_FEATURE_MAP).sort((a,b)=>b.length-a.length);
   for (const k of pfKeys) {
-    if (text.includes(k)) {
+    if (new RegExp("\\b" + escapeRegExp(k) + "\\b", "i").test(text)) {
       entities.propertyFeature = PROPERTY_FEATURE_MAP[k];
       entities.propertyFeatureLabel = PROPERTY_FEATURE_LABELS[PROPERTY_FEATURE_MAP[k]];
       break;
@@ -500,7 +504,7 @@ function parseQuery(raw, geoOverride = null) {
     ...Object.keys(PROPERTY_FEATURE_MAP),
   ].sort((a, b) => b.length - a.length);
 
-  const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 
   const knownPatterns = [
     /\d+\s*(?:bhk|bhks|bedroom|bedrooms|bed\b|br\b)/gi,

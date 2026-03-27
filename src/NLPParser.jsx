@@ -109,19 +109,7 @@ const PROPERTY_FEATURE_LABELS = {
   1:"Corner Property",2:"Park Facing",3:"Road Facing",4:"Roof Rights",
 };
 
-const BUDGET_TIERS = [
-  {id:2,price:500000,label:"5L"},{id:3,price:1000000,label:"10L"},
-  {id:4,price:1500000,label:"15L"},{id:5,price:2000000,label:"20L"},
-  {id:6,price:2500000,label:"25L"},{id:7,price:3000000,label:"30L"},
-  {id:8,price:4000000,label:"40L"},{id:9,price:5000000,label:"50L"},
-  {id:10,price:6000000,label:"60L"},{id:11,price:7500000,label:"75L"},
-  {id:127,price:8000000,label:"80L"},{id:128,price:8500000,label:"85L"},
-  {id:12,price:9000000,label:"90L"},{id:130,price:9500000,label:"95L"},
-  {id:13,price:10000000,label:"1Cr"},{id:14,price:15000000,label:"1.5Cr"},
-  {id:15,price:20000000,label:"2Cr"},{id:16,price:30000000,label:"3Cr"},
-  {id:169,price:40000000,label:"4Cr"},{id:17,price:50000000,label:"5Cr"},
-  {id:18,price:100000000,label:"10Cr"},
-];
+
 
 // ─── GEOGRAPHIC DATA ─────────────────────────────────────────────────────────
 
@@ -326,11 +314,7 @@ function resolveGeo(residualTokens, cityOverride = null) {
 
 // ─── MAIN NLP PARSER ─────────────────────────────────────────────────────────
 
-function getBudgetTier(price) {
-  return BUDGET_TIERS.reduce((best,t) =>
-    Math.abs(t.price-price) < Math.abs(best.price-price) ? t : best
-  );
-}
+
 
 function formatPrice(p) {
   if (p >= 10000000) return `₹${(p/10000000).toFixed(p%10000000===0?0:2)} Cr`;
@@ -405,8 +389,8 @@ function parseQuery(raw, geoOverride = null) {
     if (price < 10000) continue;
     const isMax = !dir || /under|below|upto|up to|less than|within|maximum|max|atmost|budget/.test(dir);
     const isMin = dir && /above|more than|starting|minimum|min|at least|from/.test(dir);
-    if (isMin) { entities.minPrice=price; entities.minPriceTier=getBudgetTier(price); }
-    else { entities.maxPrice=price; entities.maxPriceTier=getBudgetTier(price); }
+    if (isMin) { entities.minPrice=price; }
+    else { entities.maxPrice=price; }
   }
 
   // 6. POSSESSION
@@ -555,8 +539,8 @@ function buildParams(e) {
   if (e.bedroom) p.bedroom_num = e.bedroom;
   if (e.propertyType) p.property_type = e.propertyType;
   p.preference = e.preference || "S";
-  if (e.maxPriceTier) { p.budget_max = e.maxPriceTier.id; p.maxPrice = e.maxPrice; }
-  if (e.minPriceTier) { p.budget_min = e.minPriceTier.id; p.minPrice = e.minPrice; }
+  if (e.maxPrice) { p.maxPrice = e.maxPrice; }
+  if (e.minPrice) { p.minPrice = e.minPrice; }
   if (e.possession) p.availability = e.possession;
   if (e.furnish) p.furnish = e.furnish;
   if (e.amenities?.length) p.features = e.amenities.map(a=>a.id).join(",");

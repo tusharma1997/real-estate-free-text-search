@@ -36,7 +36,7 @@ const PROPERTY_TYPE_LABELS = {
 };
 
 const POSSESSION_MAP = {
-  "ready to move":2,"ready-to-move":2,"rtm":2,"rdy to move":2,"immediate possession":2,
+  "ready to move":2,"ready-to-move":2,"rtm":2,"immediate possession":2,
   "immediate":2,"move in ready":2,"possession ready":2,"ready possession":2,
   "available immediately":2,"ready":2,
   "under construction":1,"under-construction":1,"uc":1,"ongoing":1,

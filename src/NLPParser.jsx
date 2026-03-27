@@ -661,16 +661,16 @@ export default function App() {
         background:"linear-gradient(180deg,#0d1220 0%,#070b12 100%)",
       }}>
         <div style={{
-          background:"linear-gradient(135deg,#ef4444,#dc2626)",
+          background:"linear-gradient(135deg,#3b82f6,#2563eb)",
           color:"#fff", fontSize:11, fontWeight:700,
           padding:"4px 10px", borderRadius:4, letterSpacing:"1.5px",
-        }}>MAGICBRICKS</div>
-        <div style={{color:"#2e3a4e",fontSize:12,letterSpacing:"0.5px"}}>NLP Query Parser</div>
+        }}>REAL ESTATE</div>
+        <div style={{color:"#2e3a4e",fontSize:12,letterSpacing:"0.5px"}}>Free Text Search — NLP Query Parser</div>
         <div style={{
           marginLeft:"auto", background:"#0f1a2e",
           border:"1px solid #1a2a40", borderRadius:5,
           padding:"3px 12px", fontSize:10, color:"#3b82f6", letterSpacing:"1px",
-        }}>PRD v2.0 — FREE_TEXT</div>
+        }}>FREE_TEXT</div>
       </div>
 
       <div style={{padding:"24px 28px", maxWidth:960, margin:"0 auto"}}>

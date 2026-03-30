@@ -1,5 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+
+const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const reBound = (k) => new RegExp('\\b' + escapeRegExp(k) + '\\b', 'i');
+
 // ─── VOCABULARY TABLES (from PRD v2.0) ──────────────────────────────────────
 
 const PROPERTY_TYPE_MAP = {
@@ -108,8 +113,6 @@ const PROPERTY_FEATURE_MAP = {
 const PROPERTY_FEATURE_LABELS = {
   1:"Corner Property",2:"Park Facing",3:"Road Facing",4:"Roof Rights",
 };
-
-
 
 // ─── GEOGRAPHIC DATA ─────────────────────────────────────────────────────────
 
@@ -314,22 +317,16 @@ function resolveGeo(residualTokens, cityOverride = null) {
 
 // ─── MAIN NLP PARSER ─────────────────────────────────────────────────────────
 
-
-
 function formatPrice(p) {
   if (p >= 10000000) return `₹${(p/10000000).toFixed(p%10000000===0?0:2)} Cr`;
   if (p >= 100000) return `₹${(p/100000).toFixed(p%100000===0?0:1)} L`;
   return `₹${p.toLocaleString()}`;
 }
 
-const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
 function dictFind(text, map, threshold = 0.80) {
   const keys = Object.keys(map).sort((a,b)=>b.length-a.length);
   // Exact first
-  for (const k of keys) {
-    if (new RegExp("\\b" + escapeRegExp(k) + "\\b", "i").test(text)) return {key:k, value:map[k], dist:0};
-  }
+  for (const k of keys) if (text.includes(k)) return {key:k, value:map[k], dist:0};
   // Fuzzy
   const f = fuzzyFind(text, keys, threshold);
   if (f) return {key:f.matched, value:map[f.matched], dist:f.dist, original:f.window};
@@ -350,7 +347,7 @@ function parseQuery(raw, geoOverride = null) {
   const ptKeys = Object.keys(PROPERTY_TYPE_MAP).sort((a,b)=>b.length-a.length);
   let ptFound = false;
   for (const k of ptKeys) {
-    if (new RegExp("\\b" + escapeRegExp(k) + "\\b", "i").test(text)) {
+    if (reBound(k).test(text)) {
       entities.propertyType = PROPERTY_TYPE_MAP[k];
       entities.propertyTypeLabel = PROPERTY_TYPE_LABELS[PROPERTY_TYPE_MAP[k]];
       ptFound = true; break;
@@ -396,7 +393,7 @@ function parseQuery(raw, geoOverride = null) {
   // 6. POSSESSION
   const possKeys = Object.keys(POSSESSION_MAP).sort((a,b)=>b.length-a.length);
   for (const k of possKeys) {
-    if (new RegExp("\\b" + escapeRegExp(k) + "\\b", "i").test(text)) {
+    if (reBound(k).test(text)) {
       entities.possession = POSSESSION_MAP[k];
       entities.possessionLabel = POSSESSION_LABELS[POSSESSION_MAP[k]];
       break;
@@ -414,7 +411,7 @@ function parseQuery(raw, geoOverride = null) {
   // 7. FURNISHING
   const furnKeys = Object.keys(FURNISH_MAP).sort((a,b)=>b.length-a.length);
   for (const k of furnKeys) {
-    if (new RegExp("\\b" + escapeRegExp(k) + "\\b", "i").test(text)) {
+    if (reBound(k).test(text)) {
       entities.furnish = FURNISH_MAP[k];
       entities.furnishLabel = FURNISH_LABELS[FURNISH_MAP[k]];
       break;
@@ -425,7 +422,7 @@ function parseQuery(raw, geoOverride = null) {
   const amenities = [];
   const amenKeys = Object.keys(AMENITY_MAP).sort((a,b)=>b.length-a.length);
   for (const k of amenKeys) {
-    if (new RegExp("\\b" + escapeRegExp(k) + "\\b", "i").test(text)) {
+    if (reBound(k).test(text)) {
       const id = AMENITY_MAP[k];
       if (!amenities.find(a=>a.id===id))
         amenities.push({id, label:AMENITY_LABELS[id]||k});
@@ -436,7 +433,7 @@ function parseQuery(raw, geoOverride = null) {
   // 9. FACING
   const facKeys = Object.keys(FACING_MAP).sort((a,b)=>b.length-a.length);
   for (const k of facKeys) {
-    if (new RegExp("\\b" + escapeRegExp(k) + "\\b", "i").test(text)) {
+    if (reBound(k).test(text)) {
       entities.facing = FACING_MAP[k];
       entities.facingLabel = FACING_LABELS[FACING_MAP[k]];
       break;
@@ -446,7 +443,7 @@ function parseQuery(raw, geoOverride = null) {
   // 10. PROPERTY FEATURES
   const pfKeys = Object.keys(PROPERTY_FEATURE_MAP).sort((a,b)=>b.length-a.length);
   for (const k of pfKeys) {
-    if (new RegExp("\\b" + escapeRegExp(k) + "\\b", "i").test(text)) {
+    if (reBound(k).test(text)) {
       entities.propertyFeature = PROPERTY_FEATURE_MAP[k];
       entities.propertyFeatureLabel = PROPERTY_FEATURE_LABELS[PROPERTY_FEATURE_MAP[k]];
       break;
@@ -479,6 +476,8 @@ function parseQuery(raw, geoOverride = null) {
   // 15. GEOGRAPHIC RESOLUTION — N-gram residual
   // Strip known claimed tokens to get geographic residual
   const stopwords = new Set(["in","at","near","for","with","and","or","the","a","an","of","to","from","by"]);
+  // Build residual stripping patterns from ALL synonym dictionaries + hard patterns
+  // This ensures entity words (gym, park, garden, flat, etc.) don't bleed into geo candidates
   const allSynonyms = [
     ...Object.keys(PROPERTY_TYPE_MAP),
     ...Object.keys(POSSESSION_MAP),
@@ -486,25 +485,22 @@ function parseQuery(raw, geoOverride = null) {
     ...Object.keys(AMENITY_MAP),
     ...Object.keys(FACING_MAP),
     ...Object.keys(PROPERTY_FEATURE_MAP),
-  ].sort((a, b) => b.length - a.length);
-
-
-
+  ].sort((a,b) => b.length - a.length);
   const knownPatterns = [
     /\d+\s*(?:bhk|bhks|bedroom|bedrooms|bed\b|br\b)/gi,
-    /\d+(?:\.\d+)?\s*(?:lakh|lakhs|lac|lacs|crore|crores|cr|l\b|k\b)/gi,
-    /\b(?:under|below|upto|above|more than|starting|minimum|maximum|budget)\b/gi,
-    /\b(?:sqft|sq\s*ft|square\s*feet|sq\s*yard|gaj)\b/gi,
-    /\b(?:ready\s*to\s*move|under\s*construction|new\s*launch|rtm)\b/gi,
-    /\b(?:furnished|unfurnished|semi\s*furnished)\b/gi,
-    /\b(?:for\s*(?:sale|rent)|buy|purchase|rent|lease)\b/gi,
-    /\d+\s*(?:bath(?:room)?|washroom)\b/gi,
-    /\b(?:owner|by owner|direct owner|no broker|no brokerage|without broker|zero brokerage)\b/gi,
-    /\b(?:builder|developer|from builder)\b/gi,
-    /\brk\b/gi,
-    /\brera\b/gi,
-    ...allSynonyms.map(k => new RegExp("\\b" + escapeRegExp(k) + "\\b", "gi")),
-    ...fuzzyMatches.map(m => new RegExp("\\b" + escapeRegExp(m.original) + "\\b", "gi"))
+    /\d+(?:\.\d+)?\s*(?:lakh|lakhs|lac|lacs|crore|crores|cr|CR|Cr|l\b|k\b)/gi,
+    /\b(?:under|below|upto|up to|less than|within|maximum|max|atmost|budget|above|more than|starting from|starting|minimum|min|at least|from)\b/gi,
+    /\b(?:sqft|sq\s*ft|sft|square\s*f(?:eet|oot)|sq\s*yard|sqyard|gaj|gaz|sq\s*m(?:eter|etre|tr)?|sqm|acre|marla)\b/gi,
+    /\b(?:ready\s*to\s*move|under\s*construction|new\s*launch|rtm|uc)\b/gi,
+    /\b(?:furnished|unfurnished|semi\s*furnished|fully\s*furnished|semifurnished)\b/gi,
+    /\b(?:for\s*(?:sale|rent)|buy|purchase|rent|lease|to\s*let)\b/gi,
+    /\d+\s*(?:bath(?:room)?s?|washroom|toilet)\b/gi,
+    /\b(?:owner|by owner|no broker|no brokerage|without broker|zero brokerage|direct owner|builder|developer)\b/gi,
+    /\b(?:1\s*rk|1rk|rera)\b/gi,
+    // Strip all synonym dictionary keys using word boundaries
+    ...allSynonyms.map(k => new RegExp('\\b' + escapeRegExp(k) + '\\b', 'gi')),
+    // Strip any fuzzy-matched originals too
+    ...fuzzyMatches.map(m => new RegExp('\\b' + escapeRegExp(m.original) + '\\b', 'gi')),
   ];
   let residual = text;
   for (const p of knownPatterns) residual = residual.replace(p, " ");
@@ -804,8 +800,8 @@ export default function App() {
                     {e.cityName && <Tag label="city" val={`${e.cityName} (${e.cityId})`} color="#ef4444"/>}
                     {e.localityName && <Tag label="locality" val={e.localityName} color="#f97316"/>}
                     {e.localityIds?.length > 1 && <Tag label="fan-out" val={`[${e.localityIds.join(",")}]`} color="#f97316"/>}
-                    {e.maxPrice && <Tag label="max_price" val={`${formatPrice(e.maxPrice)} (tier ${e.maxPriceTier?.id})`} color="#10b981"/>}
-                    {e.minPrice && <Tag label="min_price" val={`${formatPrice(e.minPrice)} (tier ${e.minPriceTier?.id})`} color="#10b981"/>}
+                    {e.maxPrice && <Tag label="max_price" val={formatPrice(e.maxPrice)} color="#10b981"/>}
+                    {e.minPrice && <Tag label="min_price" val={formatPrice(e.minPrice)} color="#10b981"/>}
                     {e.possession && <Tag label="availability" val={`${e.possession} (${e.possessionLabel})`} color="#06b6d4"/>}
                     {e.furnish && <Tag label="furnish" val={`${e.furnish} (${e.furnishLabel})`} color="#a855f7"/>}
                     {e.facing && <Tag label="facing" val={`${e.facing} (${e.facingLabel})`} color="#0ea5e9"/>}

@@ -483,7 +483,7 @@ function parseQuery(raw, geoOverride = null) {
     /\d+\s*(?:bhk|bhks|bedroom|bedrooms|bed\b|br\b)/gi,
     /\d+(?:\.\d+)?\s*(?:lakh|lakhs|lac|lacs|crore|crores|cr|CR|Cr|l\b|k\b)/gi,
     /\b(?:under|below|upto|up to|less than|within|maximum|max|atmost|budget|above|more than|starting from|starting|minimum|min|at least|from)\b/gi,
-    /\b(?:sqft|sq\.?\s*ft|sft|square\s*f(?:eet|oot)|sq\.?\s*yard|sqyard|sq\.?\s*yd|sqyd|gaj|gaz|sq\.?\s*m(?:eter|etre|tr)?|sqm|acre|marla)\b/gi,
+    /\b\d+(?:\.\d+)?\s*(?:sqft|sq\.?\s*ft|sft|square\s*f(?:eet|oot)|sq\.?\s*yard|sqyard|sq\.?\s*yd|sqyd|gaj|gaz|sq\.?\s*m(?:eter|etre|tr)?|sqm|acre|marla)\b/gi,
     /\b(?:ready\s*to\s*move|under\s*construction|new\s*launch|rtm|uc)\b/gi,
     /\b(?:furnished|unfurnished|semi\s*furnished|fully\s*furnished|semifurnished)\b/gi,
     /\b(?:for\s*(?:sale|rent)|buy|purchase|rent|lease|to\s*let)\b/gi,

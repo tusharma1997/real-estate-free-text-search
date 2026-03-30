@@ -299,13 +299,6 @@ function resolveGeo(residualTokens, cityOverride = null) {
         result.cityName = parentCity.name;
       }
     }
-    // Fan-out — same parent name
-    const siblings = GEO_ENTITIES.filter(e =>
-      e.type === "locality" &&
-      e.parent_city_id === winner.entity.parent_city_id &&
-      e.name.toLowerCase().startsWith(winner.entity.name.toLowerCase().split(" ")[0])
-    );
-    if (siblings.length > 1) result.localityIds = siblings.map(e=>e.id);
   }
   
   result.fuzzyCorrection = winner.editDist > 0
@@ -799,7 +792,6 @@ export default function App() {
                     {e.propertyType && <Tag label="property_type" val={`${e.propertyType} (${e.propertyTypeLabel})`} color="#8b5cf6"/>}
                     {e.cityName && <Tag label="city" val={`${e.cityName} (${e.cityId})`} color="#ef4444"/>}
                     {e.localityName && <Tag label="locality" val={e.localityName} color="#f97316"/>}
-                    {e.localityIds?.length > 1 && <Tag label="fan-out" val={`[${e.localityIds.join(",")}]`} color="#f97316"/>}
                     {e.maxPrice && <Tag label="max_price" val={formatPrice(e.maxPrice)} color="#10b981"/>}
                     {e.minPrice && <Tag label="min_price" val={formatPrice(e.minPrice)} color="#10b981"/>}
                     {e.possession && <Tag label="availability" val={`${e.possession} (${e.possessionLabel})`} color="#06b6d4"/>}
